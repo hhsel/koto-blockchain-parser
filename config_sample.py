@@ -1,0 +1,4 @@
+COIND_USER = "RPCUSER"
+COIND_PASS = "RPCPASSWORD"
+
+url = "http://??????????:RPCPORT"
