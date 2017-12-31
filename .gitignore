@@ -1,5 +1,3 @@
 KotoBlockchainParser/__pycache__/*
 KotoBlockchainParser/__pycache__/
-config.py
-
-__pycache__/config.cpython-36.pyc
+config.json

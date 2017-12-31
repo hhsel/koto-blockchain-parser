@@ -1,0 +1,8 @@
+{
+	"COIND_DOMAIN"  : "MyCoolDomain.com",
+	"COIND_PROTOCOL": "http",
+	"COIND_PORT"	: 8432,
+
+	"COIND_USER"	: "MyCoolUserName",
+	"COIND_PASS"	: "MyCoolestPasswordEver"
+}

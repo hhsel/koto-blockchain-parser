@@ -1,8 +1,11 @@
 import hashlib
 import base58
+from . import RPCHelper
+
 class RunOutOfStringException(Exception): pass
 class IncorrectResultException(Exception): pass
 class UnknownOperationCodeException(Exception): pass
+class RPCErrorException(Exception): pass
 
 # read bytes in the little endian manner.
 def read_byte(s,n, convert_int=False):
@@ -176,7 +179,7 @@ class Script:
 		self.rawdata = script
 		self._parse()
 
-class KotoBlock:
+class Block:
 	def _parseBlockHeader(self, b):
 		class BlockHeader: pass
 		bh = BlockHeader()
@@ -197,7 +200,6 @@ class KotoBlock:
 		t.version				, b = read_byte(b, 4, True)
 
 		n, b = read_varint(b)
-		sig_pubkey = None # input script is concatenation of <sig> <pubKey>, which is hashed to obtain address in output.
 		for _ in range(n):
 			ti = TransactionInput()
 			b = ti._parse(b)
@@ -207,8 +209,6 @@ class KotoBlock:
 		n, b = read_varint(b)
 		for _ in range(n):
 			to = TransactionOutput(b)
-			if sig_pubkey is not None:
-				to.sig_pubkey = sig_pubkey
 			b = to._parse(b)
 			t.outputs.append(to)
 
@@ -217,9 +217,7 @@ class KotoBlock:
 		if t.version <= 1:
 			return t, b
 
-
 		# joinsplit information is added if and only if version > 1.
-		#t.dummy			, b = read_byte(b, 4, True)
 		n, b = read_varint(b)
 		for _ in range(n):
 			s, b = read_byte(b, 1802)
@@ -249,8 +247,8 @@ class KotoBlock:
 		if(len(remainder)):
 			raise IncorrectResultException("there are some bits not processed:\n{}".format(remainder))
 
-	def __init__(self, rawblock):
-		self.rawdata = rawblock
+	def __init__(self, rawdata):
+		self.rawdata = rawdata
 		self._parseBlock()
 
 	def __str__(self):
@@ -259,3 +257,14 @@ class KotoBlock:
 		for i in range(len(self.transactions)):
 			s += str(self.transactions[i])
 		return s
+
+	@staticmethod
+	def fromRawData(rawdata):
+		return __class__(rawdata)
+	@staticmethod
+	def fromBlockHash(blockhash):
+		try:
+			rawdata = RPCHelper.get_rawblockdata(blockhash)
+		except Exception:
+			raise RPCErrorException("failed to connect to the server. this is a HTTP error.")
+		return __class__(rawdata)
