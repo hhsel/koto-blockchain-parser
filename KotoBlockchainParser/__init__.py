@@ -1,7 +1,8 @@
 import hashlib
-
+import base58
 class RunOutOfStringException(Exception): pass
 class IncorrectResultException(Exception): pass
+class UnknownOperationCodeException(Exception): pass
 
 # read bytes in the little endian manner.
 def read_byte(s,n, convert_int=False):
@@ -73,14 +74,108 @@ class TransactionInput:
 	def __str__(self):
 		s = ""
 		s += "previous transaction:\n\t {}\n".format(self.previous_transaction)
-		s += "script:\n\t {}\n".format(self.script)
-		s += "sequence:\n\t {}\n".format(self.sequence)
+		s += "script(sig + pubkey):\n\t {}\n".format(self.script)
 		return s
+
+	def _parse(self,b):
+		self.previous_transaction	, b = read_byte(b, 32)
+		self.previous_txout_index	, b = read_byte(b, 4)
+		self.script_length			, b = read_varint(b)
+		self.script_height_length	, b = read_varint(b)
+		self.script_height			, b = read_byte(b, self.script_height_length, True)
+		j = len(hex(self.script_length)[2:]) # if the value is 1, it will get 0. we need to augument it to 2 when it's 1
+		if j == 1: j = 2
+		readout_length				= self.script_length - self.script_height_length - j // 2
+		script						, b = read_byte_seq(b, readout_length)
+		self.script					= script #Script(script)
+		self.sequence				, b = read_byte(b, 4, True) # Default for Bitcoin Core and almost all other programs is 0xffffffff.
+		return b
+
 class TransactionOutput:
 	def __str__(self):
 		s = "value:\n\t {}\n".format(decode_satoshi(self.value))
-		s += "script:\n\t {}\n".format(self.pk_script)
+		s += "script(decoded):\n\t {}\n".format(self.script)
+		s += "address:\n\t {}\n".format(self.script.address)
 		return s
+
+	def _parse(self,b):
+		self.value			, b = read_byte(b, 8, True)
+		self.pk_script_size	, b = read_varint(b)
+		script				, b	= read_byte_seq(b, self.pk_script_size)
+		self.script			= Script(script, self.sig_pubkey)
+		return b
+
+	def __init__(self, rawdata):
+		self.rawdata = rawdata
+		self.sig_pubkey = None
+
+class Script:
+	def __str__(self):
+		return self.script
+
+	def _decode_opcode(self, b):
+		op, b = read_byte_seq(b, 1)
+		r = None
+
+		nop = int(op,16)
+
+		# push specified bytes (1-75) to the stack
+		if 1 <= nop and nop <= 75:
+			t, b = read_byte_seq(b, nop)
+			r = "PUSH[{}]".format(nop)
+		elif nop == 118:
+			r = "OP_DUP"
+		elif nop == 101:
+			r = "OP_VERIF"
+		elif nop == 136:
+			r = "OP_EQUALVERIFY"
+		elif nop == 169:
+			# note that the one on Zcash specification is 0x1cbd.
+			# the prefix 0x1836 intentionally guarantee the resultant address starts from "k1" or "jz"
+			version_prefix = "1836"
+
+			t, b = read_byte_seq(b, 1, True) # this should be 20
+			t, b = read_byte_seq(b, t) # 160-bit hash160
+			r = "OP_HASH160[{}]".format(t)
+			h = t
+			h = version_prefix + h
+			h = hashlib.sha256( bytes.fromhex(h) ).hexdigest()
+			# although the Zcash specification specifies we use ripemd160(sha256(x)), it does not work.
+			# sha256(sha256(x)) yields the same address as Koto GUI Wallet and koto-cli.
+			h = hashlib.sha256( bytes.fromhex(h) ).hexdigest()
+			f = h[:8]
+			h = version_prefix + t + f
+			h = base58.b58encode( bytes.fromhex(h) )
+			self.address = h
+
+		elif nop == 172:
+			r = "OP_CHECKSIG"
+		elif 179 <= nop and nop <= 185:
+			r = "OP_NOP{}".format(nop-179 + 4)
+
+		if r is None:
+			raise UnknownOperationCodeException(op)
+
+		return r, b
+
+	def _parse(self):
+		s = ""
+		b = self.rawdata
+
+		for _ in range(5):
+			r, b = self._decode_opcode(b)
+			s += r + " "
+			if len(b) == 0:
+				break
+
+		if len(b) > 0:
+			raise IncorrectResultException("there is bytes to be processed in the script field")
+		self.script = s[:-1]
+
+	def __init__(self,script,sig_pubkey=None):
+		self.rawdata = script
+		self._parse()
+
 class KotoBlock:
 	def _parseBlockHeader(self, b):
 		class BlockHeader: pass
@@ -102,26 +197,19 @@ class KotoBlock:
 		t.version				, b = read_byte(b, 4, True)
 
 		n, b = read_varint(b)
+		sig_pubkey = None # input script is concatenation of <sig> <pubKey>, which is hashed to obtain address in output.
 		for _ in range(n):
 			ti = TransactionInput()
-			ti.previous_transaction	, b = read_byte(b, 32)
-			ti.previous_txout_index	, b = read_byte(b, 4)
-			ti.script_length		, b = read_varint(b)
-			ti.script_height_length	, b = read_varint(b)
-			ti.script_height		, b = read_byte(b, ti.script_height_length, True)
-			j = len(hex(ti.script_length)[2:])
-			if j == 1: j = 2
-			readout_length				= ti.script_length - ti.script_height_length - j // 2
-			ti.script				, b = read_byte_seq(b, readout_length)
-			ti.sequence				, b = read_byte(b, 4, True) # Default for Bitcoin Core and almost all other programs is 0xffffffff.
+			b = ti._parse(b)
+			sig_pubkey = ti.script
 			t.inputs.append(ti)
 
 		n, b = read_varint(b)
 		for _ in range(n):
-			to = TransactionOutput()
-			to.value			, b = read_byte(b, 8, True)
-			to.pk_script_size	, b = read_varint(b)
-			to.pk_script		, b = read_byte_seq(b, to.pk_script_size)
+			to = TransactionOutput(b)
+			if sig_pubkey is not None:
+				to.sig_pubkey = sig_pubkey
+			b = to._parse(b)
 			t.outputs.append(to)
 
 		t.lock_time			, b = read_byte(b, 4, True)
