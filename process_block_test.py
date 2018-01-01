@@ -4,7 +4,7 @@ import time
 
 OUTPUT_DIR = "./data/"
 
-blockhash = "e2c9c63a545e02898e35d1cf8d01b24e6a82da83f6c9a08cdb4c85d07fad69d0"
+blockhash = "a6fab8a8917a9d6a6e9d8daf448cfd47dc9f24cb5c6dad410d432cbebf3ddac5"
 # remarkable blocks
 #blockhash = "e574d8fc0a69205757759ae67d2ccbfb015b3776629b6ce2638fb27aef193129"
 #blockhash = "793e15fd4f18099efb86ccf350851e1a3f88fa25fd865f830c61e958128bafce"
@@ -17,11 +17,11 @@ tolerance = 10
 tc = 0
 while True:
 	print("* processing: {}".format(blockhash))
-	fp = OUTPUT_DIR + blockhash
 	try:
 		blk = Block.fromBlockHash(blockhash)
-		print("done, block height {}, {} transactions".format(
-					blk.coinbase.inputs[0].height,
+		height = blk.coinbase.inputs[0].height
+		print("done, (block height {}, {} transactions found)".format(
+					height,
 					len(blk.transactions)+1
 		))
 		tc = 0
@@ -36,7 +36,9 @@ while True:
 			exit()
 		continue
 
+	fp = OUTPUT_DIR + "{}_{}".format( str(height).zfill(7), blockhash)
 	blk.serialize(fp)
+	print("output to {}".format(fp))
 	if blk.coinbase.inputs[0].height == 0:
 		break
 

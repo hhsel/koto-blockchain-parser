@@ -119,9 +119,10 @@ class Transaction:
 
 		n, b, rb = read_varint(b, return_bytes=True)
 		self.size += rb
-		for _ in range(n):
+		for i in range(n):
 			to = TransactionOutput(b)
 			b, rb = to._parse(b)
+			to.index = i
 			self.outputs.append(to)
 			self.size += rb
 
@@ -159,7 +160,8 @@ class TransactionInput:
 	def __str__(self):
 		s = ""
 		s += "previous transaction:\n\t {}\n".format(self.prevhash)
-		s += "script(sig + pubkey):\n\t {}\n".format(self.script)
+		s += "previous transaction index\n\t {}\n".format( int(self.index,16) )
+		s += "script:\n\t {}\n".format(self.script)
 		return s
 
 	def _parse(self,b):
