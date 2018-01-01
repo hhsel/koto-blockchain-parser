@@ -189,7 +189,7 @@ class TransactionInput:
 				if 81 <= self.height_bytes and self.height_bytes <= 96:
 					# special operation OP1-16
 					self.height = self.height_bytes - 80
-					self.height_bytes = 1
+					self.height_bytes = 0
 				elif self.height_bytes == 0:
 					self.height_bytes = 0
 					self.height = 0
@@ -245,19 +245,27 @@ class Script:
 		r = None
 
 		nop = int(op,16)
+
 		# push specified bytes (1-75) to the stack
 		if 1 <= nop and nop <= 75: # 0x01 - 0x4b
 			# * is there some exception that output scripts contain PUSH operations?
 			# for example: blockhash = "793e15fd4f18099efb86ccf350851e1a3f88fa25fd865f830c61e958128bafce"
 			# contains PUSH 11 before normal routine "0x88ac"
 			r = "PUSH[{}]".format(nop)
-			t, b = read_byte_seq(b, nop)
+			if len(b) >= nop:
+				t, b = read_byte_seq(b, nop)
+		elif 82 <= nop and nop <= 96: # 0x52-0x60
+			r = "OP_{}".format(nop-80)
 		elif nop == 118:
 			r = "OP_DUP"
 		elif nop == 101:
 			r = "OP_VERIF"
 		elif nop == 136:
 			r = "OP_EQUALVERIFY"
+		elif nop == 157: #0x9d
+			r = "OP_NUMEQUALVERIFY"
+		elif nop == 166: # 166 = OP_RIPEMD160(0xa6)
+			r = "OP_RIPEMD160"
 		elif nop == 169:
 			# note that the one on Zcash specification is 0x1cbd.
 			# the prefix 0x1836 intentionally guarantee the resultant address starts from "k1" or "jz"
@@ -284,6 +292,8 @@ class Script:
 			# what is 0xbb found on e574d8fc0a69205757759ae67d2ccbfb015b3776629b6ce2638fb27aef193129 ??
 			# 0x14 [20bytes of hash] "0xbb" 0x88 0xac [END]
 			r = "0xbb?"
+		elif nop == 227: # what is 0xe3?
+			r = "0xe3?"
 		elif nop == 253:
 			# 253-255 are invalid
 			r = "OP_PUBKEYHASH"
