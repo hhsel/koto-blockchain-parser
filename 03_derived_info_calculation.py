@@ -3,6 +3,8 @@ import mysql.connector
 import json
 import os
 
+TRANSACTION_INDEX_NULL = 2147483647 # 0xFFFFFFFF
+
 with open("config.json", "r") as f:
 	o = json.load(f)
 for k in o:
@@ -15,39 +17,45 @@ con = mysql.connector.connect(
     password = DB_PASSWORD,
     database = DB_NAME
 )
-sql = con.cursor(buffered=True)
+sql = con.cursor()
 
-########################################### DERIVED INFORMATION
-		# "address		CHAR(36)	PRIMARY KEY,"
-		# "balance		INT,"
-		# "minedblocks	INT,"
-		# "create_date	DATETIME,"
-		# "update_date	DATETIME"
-		# transaction_inouts (hash, prevhash, type, addr, value, script
+########################################### A. filling empty columns in the transaction_inouts
+cur_height = 0
+while True:
+	# block existence check
+	print("current height: {}".format(cur_height))
+	sql.execute("SELECT block FROM blocks WHERE block={}".format(cur_height))
+	res = sql.fetchall()
+	if res is None:
+		print("block number {} not found, exit.".format(cur_height))
+		break
 
-# sql.execute(
-#  	"INSERT INTO addresses (address, balance) (SELECT addr, SUM(value) FROM transaction_inouts GROUP BY addr)"
-# )
-sql.execute((
- 	"SELECT hash,prevhash FROM transaction_inouts "
-	"WHERE type=0 AND prevhash != '0000000000000000000000000000000000000000000000000000000000000000' AND prevhash IS NOT NULL AND prevhash != ''"
-	"LIMIT 1"
-))
-#res = sql.fetchall()
-print("fetched previous hash transactions")
-res = sql.fetchall()
-for e in res:
-	print("txid: ", e[0])
-	print("prev: ", e[1])
+	# get tranactions in current block height.
+	sql.execute("SELECT hash FROM transactions WHERE block={}".format(cur_height))
+	tx_hashes = sql.fetchall()
+	print("{} transaction(s) found to look at:".format(len(tx_hashes)))
+	for (txid,) in tx_hashes:
+		# get transaction inputs
+		sql.execute("SELECT prevhash, idx FROM transaction_inouts WHERE hash='{}' AND type=0 AND prevhash!='0000000000000000000000000000000000000000000000000000000000000000'".format(txid))
+		txins = sql.fetchall()
+		print(txins)
 
-	sql.execute((
-	 	"SELECT hash, prevhash FROM transaction_inouts "
-		"WHERE type=1 AND hash='{}'"
-		.format(
-			e[1]
-		)
-	))
-	ins = sql.fetchall()
-	print(ins)
+		# search for corresponding (hash, index) combination
+		for (prevhash, prevhashindex,) in txins:
+			sql.execute("SELECT addr, value FROM transaction_inouts WHERE hash='{}' AND idx={} AND type=1"
+			.format(prevhash, prevhashindex))
+			rdms = sql.fetchall()
+			if rdms is None or len(rdms) == 0:
+				print("hash {} with index {} not found".format(prevhash, prevhashindex))
+				break
+			if len(rdms) > 1:
+				raise Exception("unexpected row count > 1")
+			(addr, value) = rdms[0]
+			print(prevhash, prevhashindex, addr, value)
+			sql.execute("UPDATE transaction_inouts SET addr='{}', value={} WHERE prevhash='{}' AND idx={} AND type=0"
+			.format(addr, value * (-1), prevhash, prevhashindex))
 
-con.commit()
+		con.commit()
+	cur_height += 1
+print("done")
+exit()

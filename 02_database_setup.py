@@ -67,6 +67,7 @@ sql.execute((
 	"CREATE TABLE transaction_inouts ("
 		"hash			CHAR(64)," # parent transaction
 		"prevhash		CHAR(64),"
+		"idx			INT,"
 		"type			INT," # type - 0 in, 1 out, 2 joinsplit
 		"addr			CHAR(36),"
 		"value			BIGINT,"
@@ -84,7 +85,7 @@ DATA_DIR = "./data/"
 c = 0
 for fn in os.listdir(DATA_DIR):
 	fp = DATA_DIR + fn
-	if len(fn) != 64:
+	if len(fn) != 64 + 8:
 		continue
 
 	c += 1
@@ -111,10 +112,11 @@ for fn in os.listdir(DATA_DIR):
 
 	for ti in blk.coinbase.inputs:
 		sql.execute(
-			"INSERT INTO transaction_inouts (hash, prevhash, type, addr, value, script) VALUES ('{}', '{}', {}, NULL, {}, '{}')"
+			"INSERT INTO transaction_inouts (hash, prevhash, idx, type, addr, value, script) VALUES ('{}', '{}', {}, {}, NULL, {}, '{}')"
 			.format(
 				t.txid,
 				ti.prevhash,
+				int(ti.index,16),
 				0,
 				0,
 				ti.script
@@ -122,17 +124,20 @@ for fn in os.listdir(DATA_DIR):
 		)
 
 	block_miner = blk.coinbase.outputs[0].script.address
+	cnt = 0
 	for to in blk.coinbase.outputs:
 		sql.execute(
-			"INSERT INTO transaction_inouts (hash, prevhash, type, addr, value, script) VALUES ('{}', NULL, {}, '{}', {}, '{}')"
+			"INSERT INTO transaction_inouts (hash, prevhash, idx, type, addr, value, script) VALUES ('{}', NULL, {},  {}, '{}', {}, '{}')"
 			.format(
 				t.txid,
+				cnt, # int(to.index,16),
 				1,
 				to.script.address,
 				to.value,
 				to.rawdata
 			)
 		)
+		cnt += 1
 
 	# process ordinary transactions
 	for t in blk.transactions:
@@ -152,27 +157,31 @@ for fn in os.listdir(DATA_DIR):
 
 		for ti in t.inputs:
 			sql.execute(
-				"INSERT INTO transaction_inouts (hash, prevhash, type, addr, value, script) VALUES ('{}', '{}', {}, NULL, {}, '{}')"
+				"INSERT INTO transaction_inouts (hash, prevhash, idx, type, addr, value, script) VALUES ('{}', '{}', {}, {}, NULL, {}, '{}')"
 				.format(
 					t.txid,
 					ti.prevhash,
+					int(ti.index,16),
 					0,
 					0,
 					ti.script
 				)
 			)
 
+		cnt = 0
 		for to in t.outputs:
 			sql.execute(
-				"INSERT INTO transaction_inouts (hash, prevhash, type, addr, value, script) VALUES ('{}', NULL, {}, '{}', {}, '{}')"
+				"INSERT INTO transaction_inouts (hash, prevhash, idx, type, addr, value, script) VALUES ('{}', NULL, {}, {}, '{}', {}, '{}')"
 				.format(
 					t.txid,
+					cnt, #int(to.index,16),
 					1,
 					to.script.address,
 					to.value,
 					to.rawdata
 				)
 			)
+			cnt += 1
 
 	# add block information at last, to determine the miner in advance.
 	sql.execute(
