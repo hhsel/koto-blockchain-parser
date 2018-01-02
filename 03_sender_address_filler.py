@@ -1,3 +1,9 @@
+##### SENDER ADDRSS FILLER SCRIPT
+# just inserting parsed data into a database is not enough for balance calculation
+# since tranasction data does not include the sender address, but the pointer of that instead.
+# we need to look up each input (previous hash, previous index) and copy address, value into that input row as sender,
+# which is what this script does.
+
 from KotoBlockchainParser import Block
 import mysql.connector
 import json

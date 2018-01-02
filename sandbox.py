@@ -1,21 +1,5 @@
 from KotoBlockchainParser import Block
-import mysql.connector
-import json
-import os
 
-import pickle
-DATA_DIR = "./data/"
-
-c = 0
-for fn in os.listdir(DATA_DIR):
-	fp = DATA_DIR + fn
-	if len(fn) != 64:
-		continue
-
-	c += 1
-	with open(fp, "rb") as f:
-		blk = pickle.load(f)
-
-	print("[{}] processing {} ({})".format(c,blk.coinbase.inputs[0].height, blk.blockhash))
-	print(blk)
-	if c == 6: break
+bh = "5ca97407ecf6b0811b0aa14003d287d094267ab33acb3a205e27b6a70c5ca779"
+blk = Block.fromBlockHash(bh)
+print(blk)

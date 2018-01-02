@@ -29,10 +29,10 @@ print("setting up tables...")
 sql.execute((
 	"CREATE TABLE blocks ("
 		"block			INT			PRIMARY KEY,"
-		"hash			CHAR(64)	UNIQUE,"
+		"hash			CHAR(64)	BINARY UNIQUE,"
 		"confirmations INT,"
-		"merkleroot    CHAR(64),"
-		"miner         CHAR(36),"
+		"merkleroot    CHAR(64)		BINARY,"
+		"miner         CHAR(36)		BINARY,"
 		"bits          CHAR(8),"
 		"difficulty    FLOAT,"
 		"transactions  INT,"
@@ -42,7 +42,7 @@ sql.execute((
 
 sql.execute((
 	"CREATE TABLE addresses ("
-		"address		CHAR(36)	PRIMARY KEY,"
+		"address		CHAR(36)	BINARY PRIMARY KEY,"
 		"balance		BIGINT,"
 		"minedblocks	INT,"
 		"create_date	DATETIME,"
@@ -52,7 +52,7 @@ sql.execute((
 
 sql.execute((
 	"CREATE TABLE transactions ("
-		"hash			CHAR(64)	PRIMARY KEY,"
+		"hash			CHAR(64)	BINARY PRIMARY KEY,"
 		"block			INT," # parent block height
 		"input			INT,"
 		"output			INT,"
@@ -65,13 +65,15 @@ sql.execute((
 
 sql.execute((
 	"CREATE TABLE transaction_inouts ("
-		"hash			CHAR(64)," # parent transaction
-		"prevhash		CHAR(64),"
+		"hash			CHAR(64)	BINARY," # parent transaction
+		"prevhash		CHAR(64)	BINARY,"
 		"idx			INT,"
 		"type			INT," # type - 0 in, 1 out, 2 joinsplit
-		"addr			CHAR(36),"
+		"addr			CHAR(36)	BINARY,"
 		"value			BIGINT,"
-		"script			TEXT"
+		"script			TEXT,"
+		"INDEX hash_index(hash),"
+		"INDEX prevhash_index(prevhash)"
 	")"
 ));
 print("created tables:")

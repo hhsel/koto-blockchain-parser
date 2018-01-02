@@ -3,3 +3,4 @@ KotoBlockchainParser/__pycache__/
 __pycache__/
 data/
 config.json
+.DS_Store
