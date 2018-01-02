@@ -21,7 +21,7 @@ class Transaction:
 			s += str(self.outputs[i])
 		for i in range(nj):
 			s += "\n////// JOINSPLIT {}\n".format(i+1)
-			s += str(self.joinsplits[i][:32]) + "... [total 1802 bytes]"
+			s += str(self.joinsplits[i])
 			s += "\n"
 
 		return s
@@ -69,7 +69,8 @@ class Transaction:
 		for _ in range(n):
 			s, b = read_byte(b, 1802)
 			self.size += 1802
-			self.joinsplits.append(s)
+			js = JoinSplit(s)
+			self.joinsplits.append(js)
 
 		if len(self.joinsplits) > 0:
 			self.joinsplit_pubkey	, b = read_byte(b, 32)
@@ -80,6 +81,18 @@ class Transaction:
 		self.txid = convert_rawtransaction_to_txid(rawtr)
 
 		return b
+
+class JoinSplit:
+	def __str__(self):
+		s = "vpub_old: {}\n".format( self.vpub_old )
+		s += "vpub_new: {}\n".format( self.vpub_new )
+		return s
+
+	# joinsplit is fixed length, no need to prepare parse function
+	def __init__(self, b):
+		self.vpub_old, b = read_byte(b, 8, True)
+		self.vpub_new, b = read_byte(b, 8, True)
+		self.body = b
 
 class TransactionInput:
 	def __init__(self, coinbase=False, genesis=False):

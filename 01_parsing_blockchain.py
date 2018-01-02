@@ -4,7 +4,7 @@ import time
 
 OUTPUT_DIR = "./data/"
 
-blockhash = "a6fab8a8917a9d6a6e9d8daf448cfd47dc9f24cb5c6dad410d432cbebf3ddac5"
+blockhash = "c95868b588d28bd6d15d13274d9353c8ac22aadecf7f0fc3cc3299c30ce67e71"
 # remarkable blocks
 #blockhash = "e574d8fc0a69205757759ae67d2ccbfb015b3776629b6ce2638fb27aef193129"
 #blockhash = "793e15fd4f18099efb86ccf350851e1a3f88fa25fd865f830c61e958128bafce"
