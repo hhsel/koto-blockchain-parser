@@ -34,7 +34,9 @@ def ensure_table_existence():
 blockhash = ""
 try:
 	ensure_table_existence()
-	with open("/root/kotowallet/docker/webenv/share/kotod-logs/latestblock.dat") as f:
+	d = "/root/kotowallet/docker/webenv/share/kotod-logs/latestblock.dat"
+	#d = "../docker/webenv/share/kotod-logs/latestblock.dat"
+	with open(d) as f:
 		blockhash = f.read()
 		blockhash = blockhash[0:-1]
 		if len(blockhash) != 64:
@@ -107,7 +109,9 @@ for fn in os.listdir(DATA_DIR):
 
 		for txid in res:
 			txid = txid[0].decode()
+			print("DELETING: " + txid + " ({})".format(height))
 			sql.execute("DELETE FROM transaction_inouts WHERE hash='{}'".format(txid))
+			sql.execute("DELETE FROM transactions WHERE hash='{}'".format(txid))
 
 		sql.execute("DELETE FROM transactions WHERE block={}".format(height))
 		sql.execute("DELETE FROM blocks WHERE block={}".format(height))
