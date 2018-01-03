@@ -57,7 +57,7 @@ except Exception:
 import os
 DATA_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data/"
 
-for fn in os.listdir(DATA_DIR)
+for fn in os.listdir(DATA_DIR):
 	try:
 		os.remove(DATA_DIR+fn)
 	except Exception:
