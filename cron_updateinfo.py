@@ -106,7 +106,7 @@ for fn in os.listdir(DATA_DIR):
 			raise Exception("why transaction is zero?")
 
 		for txid in res:
-			txid = txid.decode()
+			txid = txid[0].decode()
 			sql.execute("DELETE FROM transaction_inouts WHERE hash='{}'".format(txid))
 
 		sql.execute("DELETE FROM transactions WHERE block={}".format(height))
@@ -229,13 +229,13 @@ for fn in os.listdir(DATA_DIR):
 	# get tranactions in current block height.
 	sql.execute("SELECT hash FROM transactions WHERE block={}".format(cur_height))
 	tx_hashes = sql.fetchall()
-	print("{} transaction(s) found to look at:".format(len(tx_hashes)))
+	#print("{} transaction(s) found to look at:".format(len(tx_hashes)))
 	for (txid,) in tx_hashes:
 		txid = txid.decode() # hash values are binary data (case-sensitive). need to decode
 		# get transaction inputs
 		sql.execute("SELECT prevhash, idx FROM transaction_inouts WHERE hash='{}' AND type=0 AND prevhash!='0000000000000000000000000000000000000000000000000000000000000000'".format(txid))
 		txins = sql.fetchall()
-		print(txins)
+		#print(txins)
 
 		# search for corresponding (hash, index) combination
 		for (prevhash, prevhashindex,) in txins:
@@ -249,7 +249,7 @@ for fn in os.listdir(DATA_DIR):
 				raise Exception("unexpected row count > 1")
 			(addr, value) = rdms[0]
 			addr = addr.decode()
-			print(prevhash, prevhashindex, addr, value)
+			#print(prevhash, prevhashindex, addr, value)
 			sql.execute("UPDATE transaction_inouts SET addr='{}', value={} WHERE prevhash='{}' AND idx={} AND type=0"
 			.format(addr, value * (-1), prevhash, prevhashindex))
 
