@@ -31,6 +31,7 @@ def ensure_table_existence():
 		")"
 	));
 
+blockhash = ""
 try:
 	ensure_table_existence()
 	with open("/root/logs/latestblock.dat") as f:
