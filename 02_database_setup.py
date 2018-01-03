@@ -41,19 +41,9 @@ sql.execute((
 ));
 
 sql.execute((
-	"CREATE TABLE addresses ("
-		"address		CHAR(36)	BINARY PRIMARY KEY,"
-		"balance		BIGINT,"
-		"minedblocks	INT,"
-		"create_date	DATETIME,"
-		"update_date	DATETIME"
-	")"
-));
-
-sql.execute((
 	"CREATE TABLE transactions ("
 		"hash			CHAR(64)	BINARY PRIMARY KEY,"
-		"block			INT," # parent block height
+		"block			INT," 						# parent block height
 		"input			INT,"
 		"output			INT,"
 		"joinsplit		INT,"
@@ -65,15 +55,16 @@ sql.execute((
 
 sql.execute((
 	"CREATE TABLE transaction_inouts ("
-		"hash			CHAR(64)	BINARY," # parent transaction
+		"hash			CHAR(64)	BINARY,"		# parent transaction
 		"prevhash		CHAR(64)	BINARY,"
 		"idx			INT,"
-		"type			INT," # type - 0 in, 1 out, 2 joinsplit
+		"type			INT," 						# type - 0 in, 1 out, 2 joinsplit
 		"addr			CHAR(36)	BINARY,"
 		"value			BIGINT,"
 		"script			TEXT,"
 		"INDEX hash_index(hash),"
-		"INDEX prevhash_index(prevhash)"
+		"INDEX prevhash_index(prevhash),"
+		"INDEX address(addr,type)"
 	")"
 ));
 print("created tables:")
