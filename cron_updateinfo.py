@@ -34,7 +34,7 @@ def ensure_table_existence():
 blockhash = ""
 try:
 	ensure_table_existence()
-	with open("/root/logs/latestblock.dat") as f:
+	with open("/root/kotowallet/docker/webenv/share/kotod-logs/latestblock.dat") as f:
 		blockhash = f.read()
 		blockhash = blockhash[0:-1]
 		if len(blockhash) != 64:
