@@ -1,6 +1,12 @@
 # first run this script to know whether successing programs will work.
 from KotoBlockchainParser import Block
 import mysql.connector
+import json
+
+with open("config.json", "r") as f:
+	o = json.load(f)
+for k in o:
+	globals()[k] = o[k]
 
 print("fetching a block data")
 blockhash = "e574d8fc0a69205757759ae67d2ccbfb015b3776629b6ce2638fb27aef193129"

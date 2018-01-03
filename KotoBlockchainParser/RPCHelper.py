@@ -15,7 +15,7 @@ def get_rawblockdata(blockhash):
 		"params": [blockhash, False],
 		"id": 1
 	}
-	r = requests.post(COIND_URL, auth=(COIND_USER, COIND_PASS), data=json.dumps(params) )
+	r = requests.post(COIND_URL, timeout=3, auth=(COIND_USER, COIND_PASS), data=json.dumps(params) )
 	r.raise_for_status()
 	o = r.json()
 	return o["result"]

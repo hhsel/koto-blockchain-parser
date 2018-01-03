@@ -20,7 +20,7 @@ con = mysql.connector.connect(
 sql = con.cursor()
 
 print("re-creating addresses table..")
-sql.execute("DROP TABLE addresses")
+sql.execute("DROP TABLE IF EXISTS addresses")
 sql.execute((
 	"CREATE TABLE addresses ("
 		"address		CHAR(36)	BINARY PRIMARY KEY,"

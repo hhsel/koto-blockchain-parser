@@ -57,11 +57,11 @@ sql.execute((
 	"CREATE TABLE transaction_inouts ("
 		"hash			CHAR(64)	BINARY,"		# parent transaction
 		"prevhash		CHAR(64)	BINARY,"
-		"idx			INT,"
+		"idx			BIGINT,"
 		"type			INT," 						# type - 0 in, 1 out, 2 joinsplit
 		"addr			CHAR(36)	BINARY,"
 		"value			BIGINT,"
-		"script			TEXT,"
+		"script			LONGTEXT,"
 		"INDEX hash_index(hash),"
 		"INDEX prevhash_index(prevhash),"
 		"INDEX address(addr,type)"
