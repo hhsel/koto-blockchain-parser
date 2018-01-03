@@ -23,4 +23,4 @@ for r in res:
 	r = r[0]
 	print("table {}".format(r))
 print("...OK")
-print("TEST PASSED)
+print("TEST PASSED")
